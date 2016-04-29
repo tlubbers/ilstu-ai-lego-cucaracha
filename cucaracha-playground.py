@@ -24,11 +24,11 @@ assert all([m.connected for m in motors]), \
     "Two large motors should be connected to ports B and C"
 
 # Instantiate infrared and touch sensors and assert connection
-ir = InfraredSensor(); assert ir.connected
+us = UltrasonicSensor(); assert us.connected
 ts = TouchSensor();    assert ts.connected
 
 # Set IR Sensor to proximity mode
-ir.mode = 'IR-PROX'
+us.mode = 'US-DIST-IN'
 
 # Instantiate button controller
 btn = Button()
@@ -101,7 +101,7 @@ while not btn.any():
 
   # Perceive and store proximity from ir sensor
   # and determine safe motor speed
-  prox = ir.value()
+  prox = us.value()
   if prox > 60:
       # Good to go
       speed = 90
