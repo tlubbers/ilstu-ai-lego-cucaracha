@@ -13,6 +13,7 @@
 #
 # -----------------------------------------------------------------------------
 import subprocess
+import os
 from time         import sleep
 from random       import choice, randint
 from ev3dev.auto  import *
@@ -24,14 +25,18 @@ assert all([m.connected for m in motors]), \
     "Two large motors should be connected to ports B and C"
 
 # Instantiate infrared and touch sensors and assert connection
-us = UltrasonicSensor(); assert us.connected
-ts = TouchSensor();    assert ts.connected
+us = UltrasonicSensor();  assert us.connected
+ts = TouchSensor();       assert ts.connected
+ls = ColorSensor();       assert ls.connected
 
 # Set IR Sensor to proximity mode
 us.mode = 'US-DIST-IN'
+ls.mode = 'COL-AMBIENT'
 
 # Instantiate button controller
 btn = Button()
+retreating = False
+light = -1
 
 def start():
     """
@@ -39,6 +44,7 @@ def start():
     """
     for m in motors:
         m.run_direct()
+    light = ls.value()
 
 def backup():
     """
@@ -46,7 +52,8 @@ def backup():
     """
 
     # Sound backup alarm.
-    Sound.tone([(1000, 500, 500)] * 3)
+    Sound.speak("Ouuuuuuuuuuuch")
+    sleep(1.0)
 
     # Turn backup lights on:
     for light in (Leds.LEFT, Leds.RIGHT):
@@ -57,7 +64,7 @@ def backup():
     # until both motors are stopped before continuing.
     for m in motors:
         m.stop(stop_command='brake')
-        m.run_timed(duty_cycle_sp=-50, time_sp=750)
+        m.run_timed(duty_cycle_sp=-20, time_sp=1000)
 
     # When motor is stopped, its `state` attribute returns empty list.
     # Wait until both motors are stopped:
@@ -76,9 +83,7 @@ def turn():
     # We want to turn the robot wheels in opposite directions from 1/4 to 3/4
     # of a second. Use `random.choice()` to decide which wheel will turn which
     # way.
-    # power = choice([(1, -1), (-1, 1)])
     power = (1, -1)
-
     t = 200
 
     for m, p in zip(motors, power):
@@ -89,14 +94,42 @@ def turn():
         sleep(0.1)
 
 def playMusic():
-    subprocess.call(['/usr/bin/aplay', '~/GitHub/ilstu-ai-lego-cucaracha/assets/song.wav'], shell=True)
+  os.system("aplay assets/song.wav")
+
+def retreat():
+  retreating = True
+  power = (1, -1)
+  t = 1000
+  for m in motors:
+        m.stop(stop_command='brake')
+  Sound.speak("Oh No! Run!")
+
+  sleep(2.0)
+  for m, p in zip(motors, power):
+      m.run_timed(duty_cycle_sp=p*75, time_sp=t)
+
+  # Wait until both motors are stopped:
+  while any(m.state for m in motors):
+      sleep(0.1)
+
 
 start()
 while not btn.any():
-  # Checking for obstacle with touch sensor
+  print ls.value()
+  # Checking for obstacle with touch sensor\
+  if light > 0:
+    if ls.value() - light > 5:
+      retreat()
+      start()
+
+  light = ls.value()
+  if light <  2:
+    break
+
   if ts.value():
       # Ran into something,
       #   backup -> turn -> restart
+      retreating = False
       backup()
       turn()
       start()
@@ -104,13 +137,17 @@ while not btn.any():
   # Perceive and store proximity from ir sensor
   # and determine safe motor speed
   prox = us.value()
+
   if prox > 60:
       # Good to go
-      speed = 90
+      speed = 50
   else:
       # Something up ahead, be weary
-      speed = 40
+      speed = 30
 
+  # If retreating, full speed ahead
+  if retreating:
+    speed = 90
   # Update motors with determined speed
   for m in motors:
       m.duty_cycle_sp = speed
@@ -121,3 +158,6 @@ while not btn.any():
 # At exit stop motors
 for m in motors:
   m.stop()
+
+sleep(0.1)
+playMusic()

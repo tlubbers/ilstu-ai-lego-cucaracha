@@ -24,11 +24,13 @@ assert all([m.connected for m in motors]), \
     "Two large motors should be connected to ports B and C"
 
 # Instantiate infrared and touch sensors and assert connection
-us = UltrasonicSensor(); assert us.connected
-ts = TouchSensor();    assert ts.connected
+us = UltrasonicSensor();  assert us.connected
+ts = TouchSensor();       assert ts.connected
+ls = ColorSensor();       assert ls.connected
 
 # Set IR Sensor to proximity mode
 us.mode = 'US-DIST-IN'
+ls.mode = 'COL-AMBIENT'
 
 # Instantiate button controller
 btn = Button()
@@ -57,7 +59,7 @@ def backup():
     # until both motors are stopped before continuing.
     for m in motors:
         m.stop(stop_command='brake')
-        m.run_timed(duty_cycle_sp=-50, time_sp=750)
+        m.run_timed(duty_cycle_sp=-20, time_sp=1000)
 
     # When motor is stopped, its `state` attribute returns empty list.
     # Wait until both motors are stopped:
@@ -76,10 +78,8 @@ def turn():
     # We want to turn the robot wheels in opposite directions from 1/4 to 3/4
     # of a second. Use `random.choice()` to decide which wheel will turn which
     # way.
-    # power = choice([(1, -1), (-1, 1)])
-    power = (1, -1)
-
-    t = 200
+    power = choice([(1, -1), (-1, 1)])
+    t = randint(250, 750)
 
     for m, p in zip(motors, power):
         m.run_timed(duty_cycle_sp=p*75, time_sp=t)
@@ -94,6 +94,7 @@ def playMusic():
 start()
 while not btn.any():
   # Checking for obstacle with touch sensor
+  print ls.value()
   if ts.value():
       # Ran into something,
       #   backup -> turn -> restart
