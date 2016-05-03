@@ -50,20 +50,23 @@ def backup():
     """
     Avoiding obstacle.
     """
-
-    # Sound backup alarm.
-    Sound.speak("Ouuuuuuuuuuuch")
-    sleep(1.0)
-
-    # Turn backup lights on:
-    for light in (Leds.LEFT, Leds.RIGHT):
-        Leds.set_color(light, Leds.RED)
-
     # Stop both motors and reverse for 1.5 seconds.
     # `run-timed` command will return immediately, so we will have to wait
     # until both motors are stopped before continuing.
     for m in motors:
         m.stop(stop_command='brake')
+
+    sleep(0.2)
+
+    Sound.speak("Ouch!")
+
+    sleep(0.2)
+
+    # Turn backup lights on:
+    for light in (Leds.LEFT, Leds.RIGHT):
+        Leds.set_color(light, Leds.RED)
+
+    for m in motors:
         m.run_timed(duty_cycle_sp=-20, time_sp=1000)
 
     # When motor is stopped, its `state` attribute returns empty list.
@@ -84,7 +87,7 @@ def turn():
     # of a second. Use `random.choice()` to decide which wheel will turn which
     # way.
     power = (1, -1)
-    t = 200
+    t = 180
 
     for m, p in zip(motors, power):
         m.run_timed(duty_cycle_sp=p*75, time_sp=t)
@@ -99,7 +102,7 @@ def playMusic():
 def retreat():
   retreating = True
   power = (1, -1)
-  t = 1000
+  t = 900
   for m in motors:
         m.stop(stop_command='brake')
   Sound.speak("Oh No! Run!")
@@ -124,6 +127,7 @@ while not btn.any():
 
   light = ls.value()
   if light <  2:
+    sleep(1.0)
     break
 
   if ts.value():
@@ -136,14 +140,15 @@ while not btn.any():
 
   # Perceive and store proximity from ir sensor
   # and determine safe motor speed
+  us.mode = 'US-DIST-IN'
   prox = us.value()
 
   if prox > 60:
       # Good to go
-      speed = 50
+      speed = 80
   else:
       # Something up ahead, be weary
-      speed = 30
+      speed = 60
 
   # If retreating, full speed ahead
   if retreating:
