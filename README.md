@@ -1,4 +1,4 @@
-# Lacucaracha - Artificial Intelligence and Legos
+# La Cucaracha - Artificial Intelligence and Legos
 
 ### Authors
 - Tyler Lubbers
